@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using Microsoft.Win32;
 
@@ -29,12 +29,12 @@ namespace LANChatPro.Storage
             }
             else
             {
-                // Validate/Fix fields if they are missing or empty
+
                 if (string.IsNullOrEmpty(config.DownloadFolder))
                 {
                     config.DownloadFolder = GetDefaultDownloadFolder();
                 }
-                // Enforce local computer name as username to ensure dynamic adaptation
+
                 config.Username = Environment.MachineName;
             }
             return config;
@@ -80,7 +80,7 @@ namespace LANChatPro.Storage
             }
             catch
             {
-                // Fallback to local app data if permission denied in downloads
+
                 downloads = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                     "LANChatPro",

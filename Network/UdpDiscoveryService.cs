@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -38,19 +38,17 @@ namespace LANChatPro.Network
                 return;
 
             _cts = new CancellationTokenSource();
-            
-            // Start background listening task
-            Task.Run(() => ListenAsync(_cts.Token));
-            
-            // Start background broadcast task
-            Task.Run(() => HeartbeatLoopAsync(_cts.Token));
+
+Task.Run(() => ListenAsync(_cts.Token));
+
+Task.Run(() => HeartbeatLoopAsync(_cts.Token));
 
             Logger.Info("UDP Discovery Service started.");
         }
 
         public void Stop()
         {
-            // Send Goodbye so other peers immediately know we went offline
+
             BroadcastGoodbye();
 
             _cts?.Cancel();
@@ -68,7 +66,7 @@ namespace LANChatPro.Network
             try
             {
                 _udpListener = new UdpClient();
-                // Set Socket ReuseAddress option so multiple instances can run on the same PC
+
                 _udpListener.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 _udpListener.Client.Bind(new IPEndPoint(IPAddress.Any, UdpPort));
 
@@ -81,14 +79,14 @@ namespace LANChatPro.Network
                     var msg = JsonSerializer.Deserialize(json, JsonContext.Default.NetworkMessage);
                     if (msg != null)
                     {
-                        // Raise event to be handled in ChatService
+
                         MessageReceived?.Invoke(msg, senderIp);
                     }
                 }
             }
             catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
             {
-                // Graceful cancellation shutdown
+
             }
             catch (Exception ex)
             {
@@ -98,21 +96,21 @@ namespace LANChatPro.Network
 
         private async Task HeartbeatLoopAsync(CancellationToken token)
         {
-            // Broadcast initial HELLO right away
+
             BroadcastHello();
 
             try
             {
                 while (!token.IsCancellationRequested)
                 {
-                    // Delay 5s between broadcasts
+
                     await Task.Delay(5000, token);
                     BroadcastHeartbeat();
                 }
             }
             catch (OperationCanceledException)
             {
-                // Graceful cancellation shutdown
+
             }
         }
 

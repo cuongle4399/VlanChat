@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
 using LANChatPro.Forms;
 using LANChatPro.Utils;
@@ -7,12 +7,13 @@ namespace LANChatPro
 {
     static class Program
     {
-        /// <summary>
-        ///  The main entry point for the application.
-        /// </summary>
-        [STAThread]
+
+[STAThread]
         static void Main()
         {
+
+            System.Runtime.InteropServices.ComWrappers.RegisterForMarshalling(WinFormsComInterop.WinFormsComWrappers.Instance);
+
             ApplicationConfiguration.Initialize();
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += (_, e) =>
@@ -28,6 +29,6 @@ namespace LANChatPro
                 }
             };
             Application.Run(new MainForm());
-        }    
+        }
     }
 }

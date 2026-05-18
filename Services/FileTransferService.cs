@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
@@ -23,8 +23,7 @@ namespace LANChatPro.Services
         {
         }
 
-        // Starts a temporary server waiting for client to connect and pull
-        public async Task<int> StartSendSessionAsync(string filePath, string peerId, string peerUsername, string peerIp, Func<string, int, Task<bool>> sendRequestAsync)
+public async Task<int> StartSendSessionAsync(string filePath, string peerId, string peerUsername, string peerIp, Func<string, int, Task<bool>> sendRequestAsync)
         {
             var fileInfo = new FileInfo(filePath);
             if (!fileInfo.Exists)
@@ -46,11 +45,10 @@ namespace LANChatPro.Services
             Transfers[transfer.Id] = transfer;
             TransferUpdated?.Invoke(transfer);
 
-            // Bind to a dynamically allocated free port (0 tells OS to assign a free port)
-            TcpListener fileListener = new TcpListener(IPAddress.Any, 0);
+TcpListener fileListener = new TcpListener(IPAddress.Any, 0);
             fileListener.Start();
             int dynamicPort = ((IPEndPoint)fileListener.LocalEndpoint).Port;
-            var acceptCts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+            var acceptCts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
             _sendSessionCancellations[transfer.Id] = acceptCts;
 
             try
@@ -72,14 +70,13 @@ namespace LANChatPro.Services
                 throw;
             }
 
-            // Wait in background for recipient to establish download stream
-            _ = Task.Run(async () =>
+_ = Task.Run(async () =>
             {
                 TcpClient? client = null;
                 try
                 {
                     client = await fileListener.AcceptTcpClientAsync(acceptCts.Token);
-                    fileListener.Stop(); // Port no longer needs to listen
+                    fileListener.Stop();
 
                     if (transfer.Status == FileTransferStatus.Rejected || transfer.Status == FileTransferStatus.Cancelled)
                     {
@@ -136,8 +133,7 @@ namespace LANChatPro.Services
             }
         }
 
-        // Recipient connects to sender's dynamic port to pull bytes
-        public void StartReceiveSession(string transferId, string fileName, long fileSize, string peerId, string peerUsername, string senderIp, int senderPort, string savePath)
+public void StartReceiveSession(string transferId, string fileName, long fileSize, string peerId, string peerUsername, string senderIp, int senderPort, string savePath)
         {
             var transfer = new FileTransferInfo
             {
@@ -191,10 +187,10 @@ namespace LANChatPro.Services
             using (NetworkStream netStream = client.GetStream())
             using (FileStream fileStream = new FileStream(transfer.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
             {
-                byte[] buffer = new byte[65536]; // 64KB standard high-performance chunks
+                byte[] buffer = new byte[65536];
                 int bytesRead;
                 long totalBytesSent = 0;
-                
+
                 DateTime lastSpeedCheck = DateTime.UtcNow;
                 long bytesSentSinceLastCheck = 0;
 
@@ -213,7 +209,7 @@ namespace LANChatPro.Services
                         double speed = bytesSentSinceLastCheck / elapsed;
                         transfer.SpeedBytesPerSecond = speed;
                         transfer.SpeedString = Helpers.FormatFileSize((long)speed) + "/s";
-                        
+
                         var duration = now - transfer.StartTime;
                         transfer.ElapsedTimeString = $"{duration.Minutes:D2}:{duration.Seconds:D2}";
 

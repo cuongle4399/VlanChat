@@ -1,11 +1,11 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using LANChatPro.Models;
 using LANChatPro.Storage;
 using System.Collections.Generic;
 
 namespace LANChatPro
 {
-    [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.Unspecified)]
+    [JsonSourceGenerationOptions(WriteIndented = false, PropertyNamingPolicy = JsonKnownNamingPolicy.Unspecified)]
     [JsonSerializable(typeof(PeerInfo))]
     [JsonSerializable(typeof(ChatMessage))]
     [JsonSerializable(typeof(NetworkMessage))]

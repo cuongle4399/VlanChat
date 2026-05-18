@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using LANChatPro.Models;
@@ -24,19 +25,24 @@ namespace LANChatPro.Services
         public string MyId => $"{LocalIp}:{ConfigManager.Config.Port}";
 
         public ConcurrentDictionary<string, PeerInfo> DiscoveredPeers { get; } = new();
+        public ConcurrentDictionary<string, PendingFileDownload> PendingFileDownloads { get; } = new();
 
-        // Core business events
-        public event Action<PeerInfo>? PeerOnline;
+public event Action<PeerInfo>? PeerOnline;
         public event Action<PeerInfo>? PeerOffline;
         public event Action<PeerInfo>? PeerUpdated;
         public event Action<ChatMessage>? GroupMessageReceived;
-        public event Action<string, ChatMessage>? PrivateMessageReceived; // peerId, message
-        public event Action<PeerInfo, bool>? PeerTypingChanged; // peer, isTyping
-        public event Action<NetworkMessage, string>? FileRequestReceived; // message, senderIp
+        public event Action<string, ChatMessage>? PrivateMessageReceived;
+        public event Action<PeerInfo, bool>? PeerTypingChanged;
 
         private UdpDiscoveryService? _udpDiscovery;
         private TcpServerService? _tcpServer;
         private System.Threading.Timer? _peerTimeoutTimer;
+        private System.Threading.Timer? _localPeerRegistryTimer;
+        private static readonly string LocalPeerRegistryPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "LANChatPro",
+            "LocalPeers"
+        );
 
         public ChatService()
         {
@@ -47,8 +53,7 @@ namespace LANChatPro.Services
 
             LocalIp = Helpers.GetLocalIPAddress();
 
-            // Port scanning strategy to support multiple clients running on the same computer
-            int port = ConfigManager.Config.Port;
+int port = ConfigManager.Config.Port;
             while (!IsPortAvailable(port))
             {
                 port++;
@@ -76,26 +81,215 @@ namespace LANChatPro.Services
             if (_tcpServer != null || _udpDiscovery != null)
                 return;
 
-            // Bind TCP listener server
-            _tcpServer = new TcpServerService(ConfigManager.Config.Port);
-            _tcpServer.MessageReceived += HandleTcpMessage;
-            _tcpServer.Start();
+            BindTcpServer();
 
-            // Bind UDP broadcast discovery socket
-            _udpDiscovery = new UdpDiscoveryService(LocalIp, ConfigManager.Config.Port, CreateNetworkMessage);
+_udpDiscovery = new UdpDiscoveryService(LocalIp, ConfigManager.Config.Port, CreateNetworkMessage);
             _udpDiscovery.MessageReceived += HandleUdpMessage;
             _udpDiscovery.Start();
 
-            // Start peer dead-node sweeping timer (every 3 seconds)
-            _peerTimeoutTimer = new System.Threading.Timer(EvaluatePeerTimeouts, null, 3000, 3000);
+_peerTimeoutTimer = new System.Threading.Timer(EvaluatePeerTimeouts, null, 3000, 3000);
+            _localPeerRegistryTimer = new System.Threading.Timer(UpdateLocalPeerRegistry, null, 0, 2000);
 
             Logger.Info($"ChatService running at local IP: {LocalIp}, TCP Port: {ConfigManager.Config.Port}. Unique Node ID: {MyId}");
+        }
+
+        private void BindTcpServer()
+        {
+            int port = ConfigManager.Config.Port;
+            while (port <= 65535)
+            {
+                var tcpServer = new TcpServerService(port);
+                tcpServer.MessageReceived += HandleTcpMessage;
+
+                try
+                {
+                    tcpServer.Start();
+                    _tcpServer = tcpServer;
+                    ConfigManager.Config.Port = port;
+                    return;
+                }
+                catch (SocketException)
+                {
+                    tcpServer.MessageReceived -= HandleTcpMessage;
+                    tcpServer.Stop();
+                    port++;
+                }
+            }
+
+            throw new InvalidOperationException("No available TCP port found for LAN Chat Pro.");
+        }
+
+        private void UpdateLocalPeerRegistry(object? state)
+        {
+            try
+            {
+                Directory.CreateDirectory(LocalPeerRegistryPath);
+
+                var self = new PeerInfo
+                {
+                    Id = MyId,
+                    IpAddress = "127.0.0.1",
+                    Port = ConfigManager.Config.Port,
+                    Username = ConfigManager.Config.Username,
+                    MachineName = Environment.MachineName,
+                    AvatarIndex = ConfigManager.Config.AvatarIndex,
+                    Status = "online",
+                    LastSeen = DateTime.UtcNow
+                };
+
+                JsonStorage.Save(GetLocalPeerFilePath(MyId), self, JsonContext.Default.PeerInfo);
+
+                foreach (string filePath in Directory.EnumerateFiles(LocalPeerRegistryPath, "*.peer.json"))
+                {
+                    string peerId = DecodePeerIdFromFileName(filePath);
+                    if (string.IsNullOrEmpty(peerId) || peerId == MyId)
+                        continue;
+
+                    DateTime lastWriteUtc = File.GetLastWriteTimeUtc(filePath);
+                    if ((DateTime.UtcNow - lastWriteUtc).TotalSeconds > 8)
+                    {
+                        MarkPeerOffline(peerId, "Local test instance stopped.");
+                        TryDeleteStaleLocalPeerFile(filePath, lastWriteUtc);
+                        continue;
+                    }
+
+                    PeerInfo? peerInfo = JsonStorage.Load(filePath, JsonContext.Default.PeerInfo);
+                    if (peerInfo == null || string.IsNullOrWhiteSpace(peerInfo.Id) || peerInfo.Id == MyId)
+                        continue;
+
+                    RegisterOrUpdatePeer(peerInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Local peer registry update failed", ex);
+            }
+        }
+
+        private void RegisterOrUpdatePeer(PeerInfo peerInfo)
+        {
+            bool isNew = false;
+            bool wentOnline = false;
+
+            var peer = DiscoveredPeers.GetOrAdd(peerInfo.Id, _ =>
+            {
+                isNew = true;
+                return new PeerInfo { Id = peerInfo.Id };
+            });
+
+            lock (peer)
+            {
+                peer.LastSeen = DateTime.UtcNow;
+                peer.Username = peerInfo.Username;
+                peer.MachineName = peerInfo.MachineName;
+                peer.IpAddress = peerInfo.IpAddress;
+                peer.Port = peerInfo.Port;
+                peer.AvatarIndex = peerInfo.AvatarIndex;
+
+                if (peer.Status == "offline")
+                {
+                    wentOnline = true;
+                }
+
+                peer.Status = "online";
+            }
+
+            if (isNew || wentOnline)
+            {
+                PeerOnline?.Invoke(peer);
+            }
+            else
+            {
+                PeerUpdated?.Invoke(peer);
+            }
+        }
+
+        private void MarkPeerOffline(string peerId, string reason)
+        {
+            if (!DiscoveredPeers.TryGetValue(peerId, out var peer))
+                return;
+
+            bool changed;
+            lock (peer)
+            {
+                changed = peer.Status != "offline";
+                peer.Status = "offline";
+                peer.IsTyping = false;
+            }
+
+            if (changed)
+            {
+                PeerOffline?.Invoke(peer);
+                NotificationService.ShowToast($"{peer.Username} went Offline", reason);
+            }
+        }
+
+        private void RemoveLocalPeerRegistration()
+        {
+            try
+            {
+                string filePath = GetLocalPeerFilePath(MyId);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"Unable to remove local peer registration: {ex.Message}");
+            }
+        }
+
+        private static void TryDeleteStaleLocalPeerFile(string filePath, DateTime lastWriteUtc)
+        {
+            try
+            {
+                if ((DateTime.UtcNow - lastWriteUtc).TotalSeconds > 30)
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private static string GetLocalPeerFilePath(string peerId)
+        {
+            return Path.Combine(LocalPeerRegistryPath, $"{EncodePeerId(peerId)}.peer.json");
+        }
+
+        private static string EncodePeerId(string peerId)
+        {
+            return Convert.ToHexString(Encoding.UTF8.GetBytes(peerId));
+        }
+
+        private static string DecodePeerIdFromFileName(string filePath)
+        {
+            string name = Path.GetFileName(filePath);
+            const string suffix = ".peer.json";
+            if (!name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                return string.Empty;
+
+            string hex = name[..^suffix.Length];
+            try
+            {
+                return Encoding.UTF8.GetString(Convert.FromHexString(hex));
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         public void Stop()
         {
             _peerTimeoutTimer?.Dispose();
             _peerTimeoutTimer = null;
+
+            _localPeerRegistryTimer?.Dispose();
+            _localPeerRegistryTimer = null;
+            RemoveLocalPeerRegistration();
 
             _udpDiscovery?.Stop();
             _udpDiscovery = null;
@@ -118,9 +312,14 @@ namespace LANChatPro.Services
             };
         }
 
-        // --- Core Chat Send Functions ---
+        private static string GetPeerTransportIp(PeerInfo peer)
+        {
+            return string.Equals(peer.MachineName, Environment.MachineName, StringComparison.OrdinalIgnoreCase)
+                ? "127.0.0.1"
+                : peer.IpAddress;
+        }
 
-        public async Task<bool> SendGroupMessageAsync(string text)
+public async Task<bool> SendGroupMessageAsync(string text)
         {
             var chatMsg = new ChatMessage
             {
@@ -138,10 +337,44 @@ namespace LANChatPro.Services
             netMsg.Content = text;
             netMsg.IsPrivate = false;
 
-            // Broadcast TCP packet to all discovered peers
-            var tasks = DiscoveredPeers.Values
+var tasks = DiscoveredPeers.Values
                 .Where(p => p.Status != "offline")
-                .Select(peer => TcpClientService.SendMessageAsync(peer.IpAddress, peer.Port, netMsg))
+                .Select(peer => TcpClientService.SendMessageAsync(GetPeerTransportIp(peer), peer.Port, netMsg))
+                .ToArray();
+
+            bool[] results = await Task.WhenAll(tasks);
+            return results.Length == 0 || results.All(result => result);
+        }
+
+        public async Task<bool> SendGroupFileRequestAsync(string filePath, int dynamicFilePort, string transferId)
+        {
+            var fileInfo = new FileInfo(filePath);
+
+var chatMsg = new ChatMessage
+            {
+                Id = transferId,
+                SenderId = MyId,
+                SenderUsername = ConfigManager.Config.Username,
+                Text = $"Đã gửi file: {fileInfo.Name}",
+                IsPrivate = false,
+                FilePath = filePath,
+                FileSize = fileInfo.Length,
+                Timestamp = DateTime.UtcNow
+            };
+            HistoryService.AddGroupMessage(chatMsg);
+
+var netMsg = CreateNetworkMessage();
+            netMsg.Type = "CHAT";
+            netMsg.Content = $"Đã chia sẻ file: {fileInfo.Name}";
+            netMsg.IsPrivate = false;
+            netMsg.FileId = transferId;
+            netMsg.FileName = fileInfo.Name;
+            netMsg.FileSize = fileInfo.Length;
+            netMsg.FilePort = dynamicFilePort;
+
+var tasks = DiscoveredPeers.Values
+                .Where(p => p.Status != "offline")
+                .Select(peer => TcpClientService.SendMessageAsync(GetPeerTransportIp(peer), peer.Port, netMsg))
                 .ToArray();
 
             bool[] results = await Task.WhenAll(tasks);
@@ -171,7 +404,7 @@ namespace LANChatPro.Services
             netMsg.IsPrivate = true;
             netMsg.RecipientId = peerId;
 
-            return await TcpClientService.SendMessageAsync(peer.IpAddress, peer.Port, netMsg);
+            return await TcpClientService.SendMessageAsync(GetPeerTransportIp(peer), peer.Port, netMsg);
         }
 
         public async Task SendTypingStateAsync(string? peerId, bool isTyping)
@@ -182,18 +415,18 @@ namespace LANChatPro.Services
 
             if (string.IsNullOrEmpty(peerId))
             {
-                // Send typing indicators to all active peers
+
                 var tasks = DiscoveredPeers.Values
                     .Where(p => p.Status != "offline")
-                    .Select(peer => TcpClientService.SendMessageAsync(peer.IpAddress, peer.Port, netMsg));
+                    .Select(peer => TcpClientService.SendMessageAsync(GetPeerTransportIp(peer), peer.Port, netMsg));
                 await Task.WhenAll(tasks);
             }
             else
             {
-                // Send to direct private peer
+
                 if (DiscoveredPeers.TryGetValue(peerId, out var peer))
                 {
-                    await TcpClientService.SendMessageAsync(peer.IpAddress, peer.Port, netMsg);
+                    await TcpClientService.SendMessageAsync(GetPeerTransportIp(peer), peer.Port, netMsg);
                 }
             }
         }
@@ -209,9 +442,49 @@ namespace LANChatPro.Services
             netMsg.FileId = transferId;
             netMsg.FileName = fileInfo.Name;
             netMsg.FileSize = fileInfo.Length;
-            netMsg.FilePort = dynamicFilePort; // Tell the receiver to connect to this dynamic port.
+            netMsg.FilePort = dynamicFilePort;
 
-            return await TcpClientService.SendMessageAsync(peer.IpAddress, peer.Port, netMsg);
+            bool sent = await TcpClientService.SendMessageAsync(GetPeerTransportIp(peer), peer.Port, netMsg);
+            if (sent)
+            {
+                HistoryService.AddPrivateMessage(peerId, new ChatMessage
+                {
+                    Id = transferId,
+                    SenderId = MyId,
+                    SenderUsername = ConfigManager.Config.Username,
+                    Text = $"Đã gửi file: {fileInfo.Name}",
+                    IsPrivate = true,
+                    RecipientId = peerId,
+                    FilePath = filePath,
+                    FileSize = fileInfo.Length,
+                    Timestamp = DateTime.UtcNow
+                });
+            }
+
+            return sent;
+        }
+
+        public bool TryGetPendingFileDownload(string fileId, out PendingFileDownload? pendingFile)
+        {
+            return PendingFileDownloads.TryGetValue(fileId, out pendingFile);
+        }
+
+        public bool StartPendingFileDownload(string fileId, string savePath)
+        {
+            if (!PendingFileDownloads.TryRemove(fileId, out var pendingFile))
+                return false;
+
+            FileTransferService.StartReceiveSession(
+                pendingFile.FileId,
+                pendingFile.FileName,
+                pendingFile.FileSize,
+                pendingFile.SenderId,
+                pendingFile.SenderUsername,
+                pendingFile.SenderIp,
+                pendingFile.FilePort,
+                savePath);
+
+            return true;
         }
 
         public async Task SendFileRejectAsync(string peerIp, int peerPort, string transferId)
@@ -223,12 +496,10 @@ namespace LANChatPro.Services
             await TcpClientService.SendMessageAsync(peerIp, peerPort, netMsg);
         }
 
-        // --- Core Message Dispatchers ---
-
-        private void HandleUdpMessage(NetworkMessage msg, string senderIp)
+private void HandleUdpMessage(NetworkMessage msg, string senderIp)
         {
             if (msg.SenderId == MyId)
-                return; // Skip loops from our own broadcasts
+                return;
 
             if (msg.Type == "GOODBYE")
             {
@@ -271,6 +542,7 @@ namespace LANChatPro.Services
                 if (peer.Status == "offline")
                 {
                     wentOnline = true;
+                    peer.OnlineSince = DateTime.Now;
                 }
 
                 peer.Status = "online";
@@ -281,9 +553,8 @@ namespace LANChatPro.Services
                 PeerOnline?.Invoke(peer);
                 NotificationService.PlayOnlineSound();
                 NotificationService.ShowToast($"{peer.Username} is Online", "A new peer joined the local network.");
-                
-                // Immediately reply with a broadcast so they see us without waiting 5 seconds
-                _udpDiscovery?.BroadcastHello();
+
+_udpDiscovery?.BroadcastHello();
             }
             else if (wentOnline)
             {
@@ -325,6 +596,7 @@ namespace LANChatPro.Services
             if (!wasKnown || peer.Status == "offline")
             {
                 peer.Status = "online";
+                peer.OnlineSince = DateTime.Now;
                 PeerOnline?.Invoke(peer);
             }
             else
@@ -335,13 +607,62 @@ namespace LANChatPro.Services
             switch (msg.Type)
             {
                 case "CHAT":
+                    string displayFilePath = msg.FileName;
+                    if (msg.FileSize > 0 && !string.IsNullOrEmpty(msg.FileId))
+                    {
+
+                        string targetFolder = ConfigManager.Config.DownloadFolder;
+                        if (string.IsNullOrWhiteSpace(targetFolder) || !Directory.Exists(targetFolder))
+                        {
+                            targetFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                            if (!Directory.Exists(targetFolder))
+                            {
+                                Directory.CreateDirectory(targetFolder);
+                            }
+                        }
+
+                        string targetFilePath = Path.Combine(targetFolder, Path.GetFileName(msg.FileName));
+                        if (File.Exists(targetFilePath))
+                        {
+                            string nameWithoutExt = Path.GetFileNameWithoutExtension(msg.FileName);
+                            string ext = Path.GetExtension(msg.FileName);
+                            int counter = 1;
+                            do
+                            {
+                                targetFilePath = Path.Combine(targetFolder, $"{nameWithoutExt} ({counter}){ext}");
+                                counter++;
+                            } while (File.Exists(targetFilePath));
+                        }
+
+                        displayFilePath = targetFilePath;
+
+                        string senderResolvedIp = string.Equals(msg.SenderMachineName, Environment.MachineName, StringComparison.OrdinalIgnoreCase)
+                            ? "127.0.0.1"
+                            : senderIp;
+
+                        PendingFileDownloads[msg.FileId] = new PendingFileDownload
+                        {
+                            FileId = msg.FileId,
+                            FileName = msg.FileName,
+                            FileSize = msg.FileSize,
+                            SenderId = msg.SenderId,
+                            SenderUsername = msg.SenderUsername,
+                            SenderIp = senderResolvedIp,
+                            FilePort = msg.FilePort > 0 ? msg.FilePort : msg.SenderPort,
+                            ReceivedAt = DateTime.UtcNow
+                        };
+                    }
+
                     var chatMsg = new ChatMessage
                     {
+                        Id = string.IsNullOrEmpty(msg.FileId) ? Guid.NewGuid().ToString("N") : msg.FileId,
                         SenderId = msg.SenderId,
                         SenderUsername = msg.SenderUsername,
                         Text = msg.Content,
                         IsPrivate = msg.IsPrivate,
                         RecipientId = msg.RecipientId,
+                        FilePath = displayFilePath,
+                        FileSize = msg.FileSize,
                         Timestamp = DateTime.UtcNow
                     };
 
@@ -369,7 +690,7 @@ namespace LANChatPro.Services
                     break;
 
                 case "FILE_REQ":
-                    FileRequestReceived?.Invoke(msg, senderIp);
+                    HandleIncomingFileRequest(msg, senderIp);
                     break;
 
                 case "FILE_REJECT":
@@ -400,6 +721,76 @@ namespace LANChatPro.Services
             return peer;
         }
 
+        private void HandleIncomingFileRequest(NetworkMessage msg, string senderIp)
+        {
+            int filePort = msg.FilePort > 0 ? msg.FilePort : msg.SenderPort;
+            string safeFileName = Path.GetFileName(msg.FileName);
+            if (string.IsNullOrWhiteSpace(safeFileName))
+            {
+                safeFileName = "received_file";
+            }
+
+string targetFolder = ConfigManager.Config.DownloadFolder;
+            if (string.IsNullOrWhiteSpace(targetFolder) || !Directory.Exists(targetFolder))
+            {
+                targetFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+                if (!Directory.Exists(targetFolder))
+                {
+                    Directory.CreateDirectory(targetFolder);
+                }
+            }
+
+            string targetFilePath = Path.Combine(targetFolder, safeFileName);
+            if (File.Exists(targetFilePath))
+            {
+                string nameWithoutExt = Path.GetFileNameWithoutExtension(safeFileName);
+                string ext = Path.GetExtension(safeFileName);
+                int counter = 1;
+                do
+                {
+                    targetFilePath = Path.Combine(targetFolder, $"{nameWithoutExt} ({counter}){ext}");
+                    counter++;
+                } while (File.Exists(targetFilePath));
+            }
+
+            string senderResolvedIp = string.Equals(msg.SenderMachineName, Environment.MachineName, StringComparison.OrdinalIgnoreCase)
+                ? "127.0.0.1"
+                : senderIp;
+
+            PendingFileDownloads[msg.FileId] = new PendingFileDownload
+            {
+                FileId = msg.FileId,
+                FileName = safeFileName,
+                FileSize = msg.FileSize,
+                SenderId = msg.SenderId,
+                SenderUsername = msg.SenderUsername,
+                SenderIp = senderResolvedIp,
+                FilePort = filePort,
+                ReceivedAt = DateTime.UtcNow
+            };
+
+            var chatMsg = new ChatMessage
+            {
+                Id = msg.FileId,
+                SenderId = msg.SenderId,
+                SenderUsername = msg.SenderUsername,
+                Text = $"Đã gửi file: {safeFileName}",
+                IsPrivate = true,
+                RecipientId = MyId,
+                FilePath = targetFilePath,
+                FileSize = msg.FileSize,
+                Timestamp = DateTime.UtcNow
+            };
+
+            HistoryService.AddPrivateMessage(msg.SenderId, chatMsg);
+
+StartPendingFileDownload(msg.FileId, targetFilePath);
+
+            NotificationService.PlayMessageSound();
+            NotificationService.ShowToast($"File từ {msg.SenderUsername}", safeFileName);
+            PrivateMessageReceived?.Invoke(msg.SenderId, chatMsg);
+        }
+
         private void EvaluatePeerTimeouts(object? state)
         {
             var now = DateTime.UtcNow;
@@ -407,7 +798,7 @@ namespace LANChatPro.Services
             {
                 if (peer.Status != "offline")
                 {
-                    // Dead node offline detection: 15 seconds silent timeout threshold
+
                     if ((now - peer.LastSeen).TotalSeconds >= 15)
                     {
                         peer.Status = "offline";
@@ -415,7 +806,7 @@ namespace LANChatPro.Services
                         PeerOffline?.Invoke(peer);
                         NotificationService.ShowToast($"{peer.Username} went Offline", "User timed out on local network.");
                     }
-                    // Autoclear typing indicators after 4 seconds
+
                     else if (peer.IsTyping && (now - peer.TypingStartTime).TotalSeconds >= 4)
                     {
                         peer.IsTyping = false;

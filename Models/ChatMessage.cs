@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Text.Json.Serialization;
 
 namespace LANChatPro.Models
@@ -11,10 +11,10 @@ namespace LANChatPro.Models
         public string Text { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
         public bool IsPrivate { get; set; }
-        public string RecipientId { get; set; } = string.Empty; // If private
-        public string FilePath { get; set; } = string.Empty; // If file message
+        public string RecipientId { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
         public long FileSize { get; set; }
-        
+
         [JsonIgnore]
         public string FormattedTimestamp => Timestamp.ToLocalTime().ToString("HH:mm:ss");
     }

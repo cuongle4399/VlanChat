@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -29,6 +29,9 @@ namespace LANChatPro.Network
             if (_cts != null)
                 return;
 
+            _listener = new TcpListener(IPAddress.Any, _port);
+            _listener.Start();
+
             _cts = new CancellationTokenSource();
             Task.Run(() => ListenAsync(_cts.Token));
             Logger.Info($"TCP Server Service started on port {_port}.");
@@ -48,18 +51,18 @@ namespace LANChatPro.Network
         {
             try
             {
-                _listener = new TcpListener(IPAddress.Any, _port);
-                _listener.Start();
-
                 while (!token.IsCancellationRequested)
                 {
+                    if (_listener == null)
+                        break;
+
                     TcpClient client = await _listener.AcceptTcpClientAsync(token);
                     _ = Task.Run(() => HandleClientAsync(client, token));
                 }
             }
             catch (Exception ex) when (ex is ObjectDisposedException || ex is OperationCanceledException)
             {
-                // Graceful cancellation shutdown
+
             }
             catch (Exception ex)
             {
@@ -81,23 +84,20 @@ namespace LANChatPro.Network
                 using (NetworkStream stream = client.GetStream())
                 using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
                 {
-                    while (!token.IsCancellationRequested)
-                    {
-                        string? line = await reader.ReadLineAsync(token);
-                        if (string.IsNullOrEmpty(line))
-                            break;
+                    string payload = await reader.ReadToEndAsync(token);
+                    if (string.IsNullOrWhiteSpace(payload))
+                        return;
 
-                        var msg = JsonSerializer.Deserialize(line, JsonContext.Default.NetworkMessage);
-                        if (msg != null)
-                        {
-                            MessageReceived?.Invoke(msg, clientIp);
-                        }
+                    var msg = JsonSerializer.Deserialize(payload, JsonContext.Default.NetworkMessage);
+                    if (msg != null)
+                    {
+                        MessageReceived?.Invoke(msg, clientIp);
                     }
                 }
             }
             catch (Exception ex) when (ex is IOException || ex is ObjectDisposedException || ex is OperationCanceledException)
             {
-                // Normal client disconnect or shutdown
+
             }
             catch (Exception ex)
             {

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Media;
 using System.Threading;
@@ -28,7 +28,7 @@ namespace LANChatPro.Services
                 }
                 catch
                 {
-                    // Suppress audio failure
+
                 }
             }
         }
@@ -43,7 +43,7 @@ namespace LANChatPro.Services
                 }
                 catch
                 {
-                    // Suppress audio failure
+
                 }
             }
         }
@@ -72,13 +72,13 @@ namespace LANChatPro.Services
                 }
                 else
                 {
-                    // Fallback to thread-safe execution if no active forms yet
+
                     ShowToastInternal(title, message, avatar);
                 }
             }
             catch
             {
-                // Suppress toast errors
+
             }
         }
 
@@ -91,7 +91,7 @@ namespace LANChatPro.Services
             }
             catch
             {
-                // Suppress
+
             }
         }
     }

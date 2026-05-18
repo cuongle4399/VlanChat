@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Net.Sockets;
 using System.Diagnostics;
@@ -16,16 +16,16 @@ namespace LANChatPro.Forms
         private readonly ChatService _chatService;
         private readonly string _peerId;
         private PeerInfo _peer;
-        
+
         private readonly Color[] _avatarColors = {
-            Color.FromArgb(88, 101, 242),  // Discord Blurple
-            Color.FromArgb(237, 66, 69),   // Crimson Red
-            Color.FromArgb(240, 167, 4),    // Sun Golden Yellow
-            Color.FromArgb(35, 165, 90),   // Emerald Green
-            Color.FromArgb(155, 89, 182),  // Amethyst Purple
-            Color.FromArgb(233, 30, 99),   // Deep Hot Pink
-            Color.FromArgb(26, 188, 156),  // Teal Turquoise
-            Color.FromArgb(52, 152, 219)   // Sky Blue
+            Color.FromArgb(88, 101, 242),
+            Color.FromArgb(237, 66, 69),
+            Color.FromArgb(240, 167, 4),
+            Color.FromArgb(35, 165, 90),
+            Color.FromArgb(155, 89, 182),
+            Color.FromArgb(233, 30, 99),
+            Color.FromArgb(26, 188, 156),
+            Color.FromArgb(52, 152, 219)
         };
 
         public PeerDetailsForm(ChatService chatService, string peerId)
@@ -40,8 +40,7 @@ namespace LANChatPro.Forms
             }
             _peer = peer;
 
-            // Load details onto UI
-            LoadPeerDetails();
+LoadPeerDetails();
         }
 
         private void LoadPeerDetails()
@@ -51,12 +50,10 @@ namespace LANChatPro.Forms
             lblMachineName.Text = _peer.MachineName;
             lblIpAddress.Text = _peer.IpAddress;
             lblPort.Text = _peer.Port.ToString();
-            
-            // Draw large custom avatar
-            picAvatar.Image = CreateCircularAvatar(_peer.Username, _peer.AvatarIndex, picAvatar.Width, picAvatar.Height);
 
-            // Status Indicator
-            if (_peer.Status == "online")
+picAvatar.Image = CreateCircularAvatar(_peer.Username, _peer.AvatarIndex, picAvatar.Width, picAvatar.Height);
+
+if (_peer.Status == "online")
             {
                 lblStatus.Text = "🟢 Online (Hoạt động)";
                 lblStatus.ForeColor = Color.FromArgb(35, 165, 90);
@@ -77,7 +74,7 @@ namespace LANChatPro.Forms
             {
                 g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 Color baseColor = _avatarColors[Math.Clamp(avatarIndex, 0, 7)];
-                
+
                 using (Brush brush = new SolidBrush(baseColor))
                 {
                     g.FillEllipse(brush, 0, 0, w, h);
@@ -134,14 +131,14 @@ namespace LANChatPro.Forms
             }
             catch
             {
-                // Silence exceptions, return -1 as failure signal
+
             }
             return -1;
         }
 
         private void btnMessage_Click(object? sender, EventArgs e)
         {
-            this.DialogResult = DialogResult.OK; // Signals parent to open private chat
+            this.DialogResult = DialogResult.OK;
             this.Close();
         }
 

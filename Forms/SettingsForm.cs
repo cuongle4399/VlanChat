@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -17,8 +17,7 @@ namespace LANChatPro.Forms
             InitializeComponent();
             _chatService = chatService;
 
-            // Load config values into controls, enforcing machine name as read-only identity
-            txtUsername.Text = Environment.MachineName;
+txtUsername.Text = Environment.MachineName;
             txtUsername.ReadOnly = true;
             txtUsername.Enabled = false;
 
@@ -34,14 +33,14 @@ namespace LANChatPro.Forms
         private void InitializeAvatarButtons()
         {
             Color[] avatarColors = {
-                Color.FromArgb(88, 101, 242),  // Discord Blurple
-                Color.FromArgb(237, 66, 69),   // Crimson Red
-                Color.FromArgb(240, 167, 4),    // Sun Golden Yellow
-                Color.FromArgb(35, 165, 90),   // Emerald Green
-                Color.FromArgb(155, 89, 182),  // Amethyst Purple
-                Color.FromArgb(233, 30, 99),   // Deep Hot Pink
-                Color.FromArgb(26, 188, 156),  // Teal Turquoise
-                Color.FromArgb(52, 152, 219)   // Sky Blue
+                Color.FromArgb(88, 101, 242),
+                Color.FromArgb(237, 66, 69),
+                Color.FromArgb(240, 167, 4),
+                Color.FromArgb(35, 165, 90),
+                Color.FromArgb(155, 89, 182),
+                Color.FromArgb(233, 30, 99),
+                Color.FromArgb(26, 188, 156),
+                Color.FromArgb(52, 152, 219)
             };
 
             for (int i = 0; i < 8; i++)
@@ -136,7 +135,7 @@ namespace LANChatPro.Forms
             _chatService.ConfigManager.Config.AvatarIndex = _selectedAvatarIndex;
 
             _chatService.ConfigManager.Save();
-            
+
             DialogResult = DialogResult.OK;
             this.Close();
         }

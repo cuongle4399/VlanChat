@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -11,16 +11,16 @@ namespace LANChatPro.Utils
         {
             try
             {
-                // Strategy 1: Look through active physical interfaces
+
                 foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
                 {
                     if (ni.OperationalStatus == OperationalStatus.Up &&
                         ni.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                     {
                         string desc = ni.Description.ToLower();
-                        // Ignore virtual adapters commonly created by Hyper-V, VirtualBox, VMware, etc.
-                        if (desc.Contains("virtual") || desc.Contains("pseudo") || desc.Contains("vmware") || 
-                            desc.Contains("hyper-v") || desc.Contains("virtualbox") || desc.Contains("host-only") || 
+
+                        if (desc.Contains("virtual") || desc.Contains("pseudo") || desc.Contains("vmware") ||
+                            desc.Contains("hyper-v") || desc.Contains("virtualbox") || desc.Contains("host-only") ||
                             desc.Contains("wsl") || desc.Contains("vpn"))
                         {
                             continue;
@@ -37,8 +37,7 @@ namespace LANChatPro.Utils
                     }
                 }
 
-                // Strategy 2: Attempt socket outbound connect simulation to query local end point
-                using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
+using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0))
                 {
                     socket.Connect("8.8.8.8", 65530);
                     IPEndPoint? endPoint = socket.LocalEndPoint as IPEndPoint;
@@ -50,7 +49,7 @@ namespace LANChatPro.Utils
             }
             catch
             {
-                // Fallback to basic DNS standard resolution
+
             }
 
             try
@@ -66,7 +65,7 @@ namespace LANChatPro.Utils
             }
             catch
             {
-                // Absolute fallback
+
             }
 
             return "127.0.0.1";

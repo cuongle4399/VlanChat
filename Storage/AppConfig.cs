@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace LANChatPro.Storage
 {
@@ -9,6 +9,6 @@ namespace LANChatPro.Storage
         public string DownloadFolder { get; set; } = string.Empty;
         public bool EnableSound { get; set; } = true;
         public bool StartWithWindows { get; set; } = false;
-        public int Port { get; set; } = 50002; // TCP Server listen port
+        public int Port { get; set; } = 50002;
     }
 }

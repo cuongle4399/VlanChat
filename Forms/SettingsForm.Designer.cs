@@ -1,4 +1,4 @@
-namespace LANChatPro.Forms
+﻿namespace LANChatPro.Forms
 {
     partial class SettingsForm
     {
@@ -38,10 +38,8 @@ namespace LANChatPro.Forms
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
             this.SuspendLayout();
-            // 
-            // lblUsername
-            // 
-            this.lblUsername.AutoSize = true;
+
+this.lblUsername.AutoSize = true;
             this.lblUsername.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.lblUsername.ForeColor = System.Drawing.Color.White;
             this.lblUsername.Location = new System.Drawing.Point(20, 20);
@@ -49,10 +47,8 @@ namespace LANChatPro.Forms
             this.lblUsername.Size = new System.Drawing.Size(69, 17);
             this.lblUsername.TabIndex = 0;
             this.lblUsername.Text = "Username";
-            // 
-            // txtUsername
-            // 
-            this.txtUsername.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.txtUsername.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtUsername.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(45)))), ((int)(((byte)(49)))));
             this.txtUsername.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -62,10 +58,8 @@ namespace LANChatPro.Forms
             this.txtUsername.Name = "txtUsername";
             this.txtUsername.Size = new System.Drawing.Size(360, 25);
             this.txtUsername.TabIndex = 1;
-            // 
-            // lblDownload
-            // 
-            this.lblDownload.AutoSize = true;
+
+this.lblDownload.AutoSize = true;
             this.lblDownload.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.lblDownload.ForeColor = System.Drawing.Color.White;
             this.lblDownload.Location = new System.Drawing.Point(20, 85);
@@ -73,10 +67,8 @@ namespace LANChatPro.Forms
             this.lblDownload.Size = new System.Drawing.Size(117, 17);
             this.lblDownload.TabIndex = 2;
             this.lblDownload.Text = "Downloads Folder";
-            // 
-            // txtDownloadPath
-            // 
-            this.txtDownloadPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.txtDownloadPath.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtDownloadPath.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(45)))), ((int)(((byte)(49)))));
             this.txtDownloadPath.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
@@ -86,10 +78,8 @@ namespace LANChatPro.Forms
             this.txtDownloadPath.Name = "txtDownloadPath";
             this.txtDownloadPath.Size = new System.Drawing.Size(275, 25);
             this.txtDownloadPath.TabIndex = 3;
-            // 
-            // btnBrowse
-            // 
-            this.btnBrowse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+
+this.btnBrowse.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnBrowse.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(88)))), ((int)(((byte)(101)))), ((int)(((byte)(242)))));
             this.btnBrowse.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnBrowse.FlatAppearance.BorderSize = 0;
@@ -103,10 +93,8 @@ namespace LANChatPro.Forms
             this.btnBrowse.Text = "Browse";
             this.btnBrowse.UseVisualStyleBackColor = false;
             this.btnBrowse.Click += new System.EventHandler(this.btnBrowse_Click);
-            // 
-            // lblAvatar
-            // 
-            this.lblAvatar.AutoSize = true;
+
+this.lblAvatar.AutoSize = true;
             this.lblAvatar.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.lblAvatar.ForeColor = System.Drawing.Color.White;
             this.lblAvatar.Location = new System.Drawing.Point(20, 150);
@@ -114,19 +102,15 @@ namespace LANChatPro.Forms
             this.lblAvatar.Size = new System.Drawing.Size(89, 17);
             this.lblAvatar.TabIndex = 5;
             this.lblAvatar.Text = "Profile Theme";
-            // 
-            // flpAvatars
-            // 
-            this.flpAvatars.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.flpAvatars.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.flpAvatars.Location = new System.Drawing.Point(20, 172);
             this.flpAvatars.Name = "flpAvatars";
             this.flpAvatars.Size = new System.Drawing.Size(360, 50);
             this.flpAvatars.TabIndex = 6;
-            // 
-            // chkEnableSound
-            // 
-            this.chkEnableSound.AutoSize = true;
+
+this.chkEnableSound.AutoSize = true;
             this.chkEnableSound.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.chkEnableSound.ForeColor = System.Drawing.Color.White;
             this.chkEnableSound.Location = new System.Drawing.Point(20, 240);
@@ -135,10 +119,8 @@ namespace LANChatPro.Forms
             this.chkEnableSound.TabIndex = 7;
             this.chkEnableSound.Text = "Enable Message Sound";
             this.chkEnableSound.UseVisualStyleBackColor = true;
-            // 
-            // chkStartWithWindows
-            // 
-            this.chkStartWithWindows.AutoSize = true;
+
+this.chkStartWithWindows.AutoSize = true;
             this.chkStartWithWindows.Font = new System.Drawing.Font("Segoe UI Semibold", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.chkStartWithWindows.ForeColor = System.Drawing.Color.White;
             this.chkStartWithWindows.Location = new System.Drawing.Point(20, 270);
@@ -147,10 +129,8 @@ namespace LANChatPro.Forms
             this.chkStartWithWindows.TabIndex = 8;
             this.chkStartWithWindows.Text = "Start With Windows";
             this.chkStartWithWindows.UseVisualStyleBackColor = true;
-            // 
-            // btnSave
-            // 
-            this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+
+this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSave.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(35)))), ((int)(((byte)(165)))), ((int)(((byte)(90)))));
             this.btnSave.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnSave.FlatAppearance.BorderSize = 0;
@@ -164,10 +144,8 @@ namespace LANChatPro.Forms
             this.btnSave.Text = "Save";
             this.btnSave.UseVisualStyleBackColor = false;
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
-            // 
-            // btnCancel
-            // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+
+this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(79)))), ((int)(((byte)(84)))), ((int)(((byte)(92)))));
             this.btnCancel.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnCancel.FlatAppearance.BorderSize = 0;
@@ -181,10 +159,8 @@ namespace LANChatPro.Forms
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = false;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
-            // 
-            // SettingsForm
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
+
+this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
             this.AcceptButton = this.btnSave;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -75,8 +75,7 @@ namespace LANChatPro.Services
                     _history["group"] = list;
                 }
 
-                // Cap history size to prevent memory bloat over time
-                if (list.Count >= 500)
+if (list.Count >= 500)
                 {
                     list.RemoveAt(0);
                 }

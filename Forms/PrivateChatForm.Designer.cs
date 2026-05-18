@@ -1,4 +1,4 @@
-namespace LANChatPro.Forms
+﻿namespace LANChatPro.Forms
 {
     partial class PrivateChatForm
     {
@@ -47,10 +47,8 @@ namespace LANChatPro.Forms
             this.pnlInput.SuspendLayout();
             this.pnlFileProgress.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // pnlHeader
-            // 
-            this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(31)))), ((int)(((byte)(34)))));
+
+this.pnlHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(31)))), ((int)(((byte)(34)))));
             this.pnlHeader.Controls.Add(this.lblStatus);
             this.pnlHeader.Controls.Add(this.lblPeerName);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
@@ -58,10 +56,8 @@ namespace LANChatPro.Forms
             this.pnlHeader.Name = "pnlHeader";
             this.pnlHeader.Size = new System.Drawing.Size(560, 55);
             this.pnlHeader.TabIndex = 0;
-            // 
-            // lblPeerName
-            // 
-            this.lblPeerName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.lblPeerName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblPeerName.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.lblPeerName.ForeColor = System.Drawing.Color.White;
@@ -70,10 +66,8 @@ namespace LANChatPro.Forms
             this.lblPeerName.Size = new System.Drawing.Size(530, 21);
             this.lblPeerName.TabIndex = 0;
             this.lblPeerName.Text = "Peer Name";
-            // 
-            // lblStatus
-            // 
-            this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.lblStatus.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(155)))), ((int)(((byte)(164)))));
@@ -82,10 +76,8 @@ namespace LANChatPro.Forms
             this.lblStatus.Size = new System.Drawing.Size(530, 15);
             this.lblStatus.TabIndex = 1;
             this.lblStatus.Text = "⚫ Offline";
-            // 
-            // rtbChat
-            // 
-            this.rtbChat.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
+
+this.rtbChat.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
             this.rtbChat.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.rtbChat.Dock = System.Windows.Forms.DockStyle.Fill;
             this.rtbChat.Font = new System.Drawing.Font("Segoe UI", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
@@ -96,10 +88,8 @@ namespace LANChatPro.Forms
             this.rtbChat.Size = new System.Drawing.Size(560, 320);
             this.rtbChat.TabIndex = 1;
             this.rtbChat.Text = "";
-            // 
-            // pnlFileProgress
-            // 
-            this.pnlFileProgress.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(45)))), ((int)(((byte)(49)))));
+
+this.pnlFileProgress.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(45)))), ((int)(((byte)(49)))));
             this.pnlFileProgress.Controls.Add(this.lblProgressDetails);
             this.pnlFileProgress.Controls.Add(this.prgFile);
             this.pnlFileProgress.Controls.Add(this.lblTimeElapsed);
@@ -110,10 +100,8 @@ namespace LANChatPro.Forms
             this.pnlFileProgress.Size = new System.Drawing.Size(560, 65);
             this.pnlFileProgress.TabIndex = 2;
             this.pnlFileProgress.Visible = false;
-            // 
-            // lblFileName
-            // 
-            this.lblFileName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.lblFileName.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblFileName.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.lblFileName.ForeColor = System.Drawing.Color.White;
@@ -122,10 +110,8 @@ namespace LANChatPro.Forms
             this.lblFileName.Size = new System.Drawing.Size(450, 15);
             this.lblFileName.TabIndex = 0;
             this.lblFileName.Text = "Sending file...";
-            // 
-            // lblTimeElapsed
-            // 
-            this.lblTimeElapsed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+
+this.lblTimeElapsed.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.lblTimeElapsed.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.lblTimeElapsed.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(219)))), ((int)(((byte)(222)))), ((int)(((byte)(225)))));
             this.lblTimeElapsed.Location = new System.Drawing.Point(470, 5);
@@ -134,19 +120,15 @@ namespace LANChatPro.Forms
             this.lblTimeElapsed.TabIndex = 1;
             this.lblTimeElapsed.Text = "Time: 00:00";
             this.lblTimeElapsed.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // prgFile
-            // 
-            this.prgFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.prgFile.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.prgFile.Location = new System.Drawing.Point(10, 25);
             this.prgFile.Name = "prgFile";
             this.prgFile.Size = new System.Drawing.Size(540, 12);
             this.prgFile.TabIndex = 2;
-            // 
-            // lblProgressDetails
-            // 
-            this.lblProgressDetails.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.lblProgressDetails.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lblProgressDetails.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.lblProgressDetails.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(148)))), ((int)(((byte)(155)))), ((int)(((byte)(164)))));
@@ -155,10 +137,8 @@ namespace LANChatPro.Forms
             this.lblProgressDetails.Size = new System.Drawing.Size(540, 13);
             this.lblProgressDetails.TabIndex = 3;
             this.lblProgressDetails.Text = "0 B / 0 B (0%) @ 0 B/s";
-            // 
-            // pnlInput
-            // 
-            this.pnlInput.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(45)))), ((int)(((byte)(49)))));
+
+this.pnlInput.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(43)))), ((int)(((byte)(45)))), ((int)(((byte)(49)))));
             this.pnlInput.Controls.Add(this.btnSend);
             this.pnlInput.Controls.Add(this.txtMessage);
             this.pnlInput.Controls.Add(this.btnSendFile);
@@ -168,57 +148,49 @@ namespace LANChatPro.Forms
             this.pnlInput.Name = "pnlInput";
             this.pnlInput.Size = new System.Drawing.Size(560, 60);
             this.pnlInput.TabIndex = 3;
-            // 
-            // btnEmoji
-            // 
-            this.btnEmoji.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
+
+this.btnEmoji.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
             this.btnEmoji.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnEmoji.FlatAppearance.BorderSize = 0;
             this.btnEmoji.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnEmoji.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.btnEmoji.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
             this.btnEmoji.ForeColor = System.Drawing.Color.White;
             this.btnEmoji.Location = new System.Drawing.Point(10, 15);
             this.btnEmoji.Name = "btnEmoji";
-            this.btnEmoji.Size = new System.Drawing.Size(35, 30);
+            this.btnEmoji.Size = new System.Drawing.Size(45, 30);
             this.btnEmoji.TabIndex = 0;
-            this.btnEmoji.Text = "😀";
+            this.btnEmoji.Text = "Icon";
             this.btnEmoji.UseVisualStyleBackColor = false;
             this.btnEmoji.Click += new System.EventHandler(this.btnEmoji_Click);
-            // 
-            // btnSendFile
-            // 
-            this.btnSendFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
+
+this.btnSendFile.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
             this.btnSendFile.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnSendFile.FlatAppearance.BorderSize = 0;
             this.btnSendFile.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSendFile.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.btnSendFile.ForeColor = System.Drawing.Color.White;
-            this.btnSendFile.Location = new System.Drawing.Point(50, 15);
+            this.btnSendFile.Location = new System.Drawing.Point(60, 15);
             this.btnSendFile.Name = "btnSendFile";
-            this.btnSendFile.Size = new System.Drawing.Size(35, 30);
+            this.btnSendFile.Size = new System.Drawing.Size(45, 30);
             this.btnSendFile.TabIndex = 1;
-            this.btnSendFile.Text = "📎";
+            this.btnSendFile.Text = "File";
             this.btnSendFile.UseVisualStyleBackColor = false;
             this.btnSendFile.Click += new System.EventHandler(this.btnSendFile_Click);
-            // 
-            // txtMessage
-            // 
-            this.txtMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+
+this.txtMessage.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.txtMessage.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(56)))), ((int)(((byte)(58)))), ((int)(((byte)(64)))));
             this.txtMessage.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.txtMessage.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
             this.txtMessage.ForeColor = System.Drawing.Color.White;
-            this.txtMessage.Location = new System.Drawing.Point(95, 16);
+            this.txtMessage.Location = new System.Drawing.Point(115, 16);
             this.txtMessage.Name = "txtMessage";
-            this.txtMessage.Size = new System.Drawing.Size(380, 25);
+            this.txtMessage.Size = new System.Drawing.Size(360, 25);
             this.txtMessage.TabIndex = 2;
             this.txtMessage.TextChanged += new System.EventHandler(this.txtMessage_TextChanged);
             this.txtMessage.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtMessage_KeyDown);
-            // 
-            // btnSend
-            // 
-            this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+
+this.btnSend.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSend.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(88)))), ((int)(((byte)(101)))), ((int)(((byte)(242)))));
             this.btnSend.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnSend.FlatAppearance.BorderSize = 0;
@@ -232,10 +204,8 @@ namespace LANChatPro.Forms
             this.btnSend.Text = "Send";
             this.btnSend.UseVisualStyleBackColor = false;
             this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
-            // 
-            // PrivateChatForm
-            // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+
+this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
             this.ClientSize = new System.Drawing.Size(560, 500);

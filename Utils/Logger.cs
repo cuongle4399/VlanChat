@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 
 namespace LANChatPro.Utils
@@ -33,7 +33,7 @@ namespace LANChatPro.Utils
             }
             catch
             {
-                // Suppress logging issues to keep execution alive
+
             }
         }
 
