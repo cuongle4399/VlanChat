@@ -22,6 +22,7 @@ namespace LANChatPro.Network
         private readonly string _localIp;
         private readonly int _tcpPort;
         private readonly Func<NetworkMessage> _messageFactory;
+        private DateTime _lastSubnetProbeUtc = DateTime.MinValue;
 
         public event Action<NetworkMessage, string>? MessageReceived;
 
@@ -106,6 +107,12 @@ Task.Run(() => HeartbeatLoopAsync(_cts.Token));
 
                     await Task.Delay(5000, token);
                     BroadcastHeartbeat();
+
+                    if ((DateTime.UtcNow - _lastSubnetProbeUtc).TotalSeconds >= 15)
+                    {
+                        _lastSubnetProbeUtc = DateTime.UtcNow;
+                        ProbeSubnetByUnicast();
+                    }
                 }
             }
             catch (OperationCanceledException)
@@ -118,21 +125,43 @@ Task.Run(() => HeartbeatLoopAsync(_cts.Token));
         {
             try
             {
-                _udpSender ??= new UdpClient();
-                _udpSender.EnableBroadcast = true;
-
-                string json = JsonSerializer.Serialize(msg, JsonContext.Default.NetworkMessage);
-                byte[] bytes = Encoding.UTF8.GetBytes(json);
-
                 foreach (var endpoint in GetBroadcastEndpoints())
                 {
-                    _udpSender.Send(bytes, bytes.Length, endpoint);
+                    SendMessageToEndpoint(msg, endpoint, enableBroadcast: true);
                 }
             }
             catch (Exception ex)
             {
                 Logger.Error("Error in UDP broadcast payload delivery", ex);
             }
+        }
+
+        private void ProbeSubnetByUnicast()
+        {
+            try
+            {
+                var msg = _messageFactory();
+                msg.Type = "HELLO";
+
+                foreach (IPAddress ip in Helpers.GetLocalSubnetIPv4Addresses(maxHosts: 512))
+                {
+                    SendMessageToEndpoint(msg, new IPEndPoint(ip, UdpPort), enableBroadcast: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"UDP unicast subnet probe failed: {ex.Message}");
+            }
+        }
+
+        private void SendMessageToEndpoint(NetworkMessage msg, IPEndPoint endpoint, bool enableBroadcast)
+        {
+            _udpSender ??= new UdpClient();
+            _udpSender.EnableBroadcast = enableBroadcast;
+
+            string json = JsonSerializer.Serialize(msg, JsonContext.Default.NetworkMessage);
+            byte[] bytes = Encoding.UTF8.GetBytes(json);
+            _udpSender.Send(bytes, bytes.Length, endpoint);
         }
 
         private static IPEndPoint[] GetBroadcastEndpoints()

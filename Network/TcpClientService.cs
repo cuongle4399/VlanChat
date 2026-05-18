@@ -12,12 +12,12 @@ namespace LANChatPro.Network
 {
     public static class TcpClientService
     {
-        public static async Task<bool> SendMessageAsync(string ip, int port, NetworkMessage msg)
+        public static async Task<bool> SendMessageAsync(string ip, int port, NetworkMessage msg, int timeoutMs = 3000, bool logFailures = true)
         {
             try
             {
                 using TcpClient client = new TcpClient();
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                using var cts = new CancellationTokenSource(timeoutMs);
                 await client.ConnectAsync(ip, port, cts.Token);
 
                 using NetworkStream stream = client.GetStream();
@@ -29,12 +29,18 @@ namespace LANChatPro.Network
             }
             catch (OperationCanceledException)
             {
-                Logger.Warn($"TCP connection timed out when sending payload to {ip}:{port}");
+                if (logFailures)
+                {
+                    Logger.Warn($"TCP connection timed out when sending payload to {ip}:{port}");
+                }
                 return false;
             }
             catch (Exception ex)
             {
-                Logger.Error($"Failed to deliver TCP message payload to {ip}:{port}", ex);
+                if (logFailures)
+                {
+                    Logger.Error($"Failed to deliver TCP message payload to {ip}:{port}", ex);
+                }
                 return false;
             }
         }

@@ -1,4 +1,4 @@
-﻿namespace LANChatPro.Forms
+namespace LANChatPro.Forms
 {
     partial class SettingsForm
     {
@@ -14,6 +14,7 @@
         private System.Windows.Forms.CheckBox chkStartWithWindows;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnCancel;
+        private System.Windows.Forms.Button btnClearData;
 
         protected override void Dispose(bool disposing)
         {
@@ -37,6 +38,7 @@
             this.chkStartWithWindows = new System.Windows.Forms.CheckBox();
             this.btnSave = new System.Windows.Forms.Button();
             this.btnCancel = new System.Windows.Forms.Button();
+            this.btnClearData = new System.Windows.Forms.Button();
             this.SuspendLayout();
 
 this.lblUsername.AutoSize = true;
@@ -160,12 +162,28 @@ this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.For
             this.btnCancel.UseVisualStyleBackColor = false;
             this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
 
+            this.btnClearData.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.btnClearData.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(237)))), ((int)(((byte)(66)))), ((int)(((byte)(69)))));
+            this.btnClearData.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnClearData.FlatAppearance.BorderSize = 0;
+            this.btnClearData.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClearData.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+            this.btnClearData.ForeColor = System.Drawing.Color.White;
+            this.btnClearData.Location = new System.Drawing.Point(20, 315);
+            this.btnClearData.Name = "btnClearData";
+            this.btnClearData.Size = new System.Drawing.Size(125, 35);
+            this.btnClearData.TabIndex = 11;
+            this.btnClearData.Text = "Clear App Data";
+            this.btnClearData.UseVisualStyleBackColor = false;
+            this.btnClearData.Click += new System.EventHandler(this.btnClearData_Click);
+
 this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(49)))), ((int)(((byte)(51)))), ((int)(((byte)(56)))));
             this.AcceptButton = this.btnSave;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(400, 370);
+            this.Controls.Add(this.btnClearData);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnSave);
             this.Controls.Add(this.chkStartWithWindows);

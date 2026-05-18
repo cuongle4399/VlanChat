@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -38,6 +39,10 @@ public event Action<PeerInfo>? PeerOnline;
         private TcpServerService? _tcpServer;
         private System.Threading.Timer? _peerTimeoutTimer;
         private System.Threading.Timer? _localPeerRegistryTimer;
+        private System.Threading.Timer? _lanProbeTimer;
+        private int _lanProbeInProgress;
+        private const int LanProbeStartPort = 50002;
+        private const int LanProbeEndPort = 50006;
         private static readonly string LocalPeerRegistryPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "LANChatPro",
@@ -89,6 +94,7 @@ _udpDiscovery = new UdpDiscoveryService(LocalIp, ConfigManager.Config.Port, Crea
 
 _peerTimeoutTimer = new System.Threading.Timer(EvaluatePeerTimeouts, null, 3000, 3000);
             _localPeerRegistryTimer = new System.Threading.Timer(UpdateLocalPeerRegistry, null, 0, 2000);
+            _lanProbeTimer = new System.Threading.Timer(ProbeLanPeers, null, 2000, 30000);
 
             Logger.Info($"ChatService running at local IP: {LocalIp}, TCP Port: {ConfigManager.Config.Port}. Unique Node ID: {MyId}");
         }
@@ -291,6 +297,9 @@ _peerTimeoutTimer = new System.Threading.Timer(EvaluatePeerTimeouts, null, 3000,
             _localPeerRegistryTimer = null;
             RemoveLocalPeerRegistration();
 
+            _lanProbeTimer?.Dispose();
+            _lanProbeTimer = null;
+
             _udpDiscovery?.Stop();
             _udpDiscovery = null;
 
@@ -298,6 +307,64 @@ _peerTimeoutTimer = new System.Threading.Timer(EvaluatePeerTimeouts, null, 3000,
             _tcpServer = null;
 
             Logger.Info("ChatService stopped.");
+        }
+
+        private void ProbeLanPeers(object? state)
+        {
+            if (Interlocked.Exchange(ref _lanProbeInProgress, 1) == 1)
+                return;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await ProbeLanPeersAsync();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"LAN TCP probe failed: {ex.Message}");
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _lanProbeInProgress, 0);
+                }
+            });
+        }
+
+        private async Task ProbeLanPeersAsync()
+        {
+            IReadOnlyList<IPAddress> subnetAddresses = Helpers.GetLocalSubnetIPv4Addresses(maxHosts: 512);
+            if (subnetAddresses.Count == 0)
+                return;
+
+            using var concurrency = new SemaphoreSlim(64);
+            var tasks = new List<Task>(subnetAddresses.Count * (LanProbeEndPort - LanProbeStartPort + 1));
+
+            foreach (IPAddress ip in subnetAddresses)
+            {
+                for (int port = LanProbeStartPort; port <= LanProbeEndPort; port++)
+                {
+                    await concurrency.WaitAsync();
+                    string ipText = ip.ToString();
+                    int targetPort = port;
+
+                    tasks.Add(Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var msg = CreateNetworkMessage();
+                            msg.Type = "HELLO";
+                            await TcpClientService.SendMessageAsync(ipText, targetPort, msg, timeoutMs: 450, logFailures: false);
+                        }
+                        finally
+                        {
+                            concurrency.Release();
+                        }
+                    }));
+                }
+            }
+
+            await Task.WhenAll(tasks);
         }
 
         public NetworkMessage CreateNetworkMessage()

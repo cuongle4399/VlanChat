@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
@@ -144,6 +144,35 @@ txtUsername.Text = Environment.MachineName;
         {
             DialogResult = DialogResult.Cancel;
             this.Close();
+        }
+
+        private void btnClearData_Click(object sender, EventArgs e)
+        {
+            var result = MessageBox.Show(
+                "Bạn có chắc chắn muốn xóa toàn bộ dữ liệu ứng dụng (lịch sử chat, hồ sơ, và cài đặt)? Ứng dụng sẽ tự động đóng sau khi xóa.",
+                "Xác nhận xóa dữ liệu",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    _chatService.Stop();
+                    string appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LANChatPro");
+                    if (Directory.Exists(appDataFolder))
+                    {
+                        Directory.Delete(appDataFolder, true);
+                    }
+                    MessageBox.Show("Đã xóa toàn bộ dữ liệu ứng dụng thành công! Vui lòng mở lại ứng dụng.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Environment.Exit(0);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi xóa dữ liệu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         private int ScaleForDpi(int value)
