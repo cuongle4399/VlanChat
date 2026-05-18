@@ -1,0 +1,25 @@
+# Build artifacts
+[Db]in/
+[Oo]bj/
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# IDEs and editors
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.clw
+*.ncb
+*.aps
+*.psess
+*.vsp
+*.vspx
+*.sap
