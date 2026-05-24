@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.Net.Sockets;
 using System.Diagnostics;
@@ -98,7 +98,7 @@ if (_peer.Status == "online")
             lblPingResult.Text = "Đang kiểm tra...";
             lblPingResult.ForeColor = Color.FromArgb(240, 167, 4);
 
-            long ms = await MeasurePingAsync(_peer.IpAddress, _peer.Port);
+            long ms = await MeasurePingAsync(_peer.IpAddress);
 
             if (this.IsDisposed || this.Disposing) return;
 
@@ -109,29 +109,28 @@ if (_peer.Status == "online")
             }
             else
             {
-                lblPingResult.Text = "Không thể kết nối! Peer có thể đã offline hoặc bị chặn tường lửa.";
+                lblPingResult.Text = "Không thể ping! Thiết bị có thể đã chặn tường lửa (ICMP) hoặc offline.";
                 lblPingResult.ForeColor = Color.FromArgb(237, 66, 69);
             }
 
             btnPing.Enabled = true;
         }
 
-        private async Task<long> MeasurePingAsync(string ip, int port)
+        private async Task<long> MeasurePingAsync(string ip)
         {
-            var sw = Stopwatch.StartNew();
             try
             {
-                using (var client = new TcpClient())
+                using (var ping = new System.Net.NetworkInformation.Ping())
                 {
-                    using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(2500));
-                    await client.ConnectAsync(ip, port, cts.Token);
-                    sw.Stop();
-                    return sw.ElapsedMilliseconds;
+                    var reply = await ping.SendPingAsync(ip, 2000);
+                    if (reply.Status == System.Net.NetworkInformation.IPStatus.Success)
+                    {
+                        return reply.RoundtripTime;
+                    }
                 }
             }
             catch
             {
-
             }
             return -1;
         }
