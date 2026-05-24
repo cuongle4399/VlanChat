@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Text.Json.Serialization;
 
 namespace LANChatPro.Models
@@ -12,6 +12,7 @@ namespace LANChatPro.Models
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
         public bool IsPrivate { get; set; }
         public string RecipientId { get; set; } = string.Empty;
+        public string FileId { get; set; } = string.Empty;
         public string FilePath { get; set; } = string.Empty;
         public long FileSize { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
 using LANChatPro.Forms;
 using LANChatPro.Utils;
@@ -28,7 +28,25 @@ namespace LANChatPro
                     Logger.Error("Unhandled application exception", ex);
                 }
             };
-            Application.Run(new MainForm());
+
+            // Loop: ConnectionCheckForm → MainForm → reconnect → ConnectionCheckForm...
+            bool reconnect = true;
+            while (reconnect)
+            {
+                reconnect = false;
+                using (var checkForm = new ConnectionCheckForm())
+                {
+                    if (checkForm.ShowDialog() != DialogResult.OK)
+                        break; // User closed / exit
+
+                    using (var mainForm = new MainForm())
+                    {
+                        Application.Run(mainForm);
+                        // MainForm sets Tag = "reconnect" when server disconnects
+                        reconnect = mainForm.Tag is string tag && tag == "reconnect";
+                    }
+                }
+            }
         }
     }
 }

@@ -8,22 +8,31 @@ echo.
 echo Dang kiem tra va bien dich du an sang Native AOT...
 echo Yeu cau: May tinh can cai dat Visual Studio voi "Desktop development with C++"
 echo.
-dotnet publish -c Release -r win-x64 --self-contained
+echo Dang bien dich Server sang Native AOT...
+dotnet publish LANChatServer\LANChatServer.csproj -c Release -r win-x64 --self-contained
 if %errorlevel% neq 0 (
     color 0c
-    echo.
-    echo [LOI] Bien dich Native AOT that bai!
-    echo Vui long kiem tra xem ban da cai dat C++ Build Tools ^(Desktop development with C++ in VS^) chua.
-    echo.
+    echo [LOI] Bien dich Server that bai!
     pause
     exit /b %errorlevel%
 )
-color 0a
-echo.
+
+echo Dang bien dich Client (VlanChat) sang Native AOT...
+dotnet publish VLANChatClient\LANChatPro.csproj -c Release -r win-x64 --self-contained
+if %errorlevel% neq 0 (
+    color 0c
+    echo [LOI] Bien dich Client that bai!
+    pause
+    exit /b %errorlevel%
+)
+
 echo ==========================================================
-echo [THANH CONG] Da bien dich Native AOT thanh cong!
-echo File thuc thi nam tai thu muc:
-echo bin\Release\net8.0-windows\win-x64\publish\LANChatPro.exe
-echo ==========================================================
+echo [THANH CONG] Da bien dich Native AOT thanh cong ca 2 ung dung!
 echo.
+echo File Server nam tai:
+echo LANChatServer\bin\Release\net8.0-windows\win-x64\publish\LANChatServer.exe
+echo.
+echo File Client nam tai:
+echo VLANChatClient\bin\Release\net8.0-windows\win-x64\publish\LANChatPro.exe
+echo ==========================================================
 pause

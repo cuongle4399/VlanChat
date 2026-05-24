@@ -1,13 +1,12 @@
 # Build artifacts
-[Db]in/
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
 [Oo]bj/
+bin/
+obj/
 
-# User-specific files
-*.user
-*.userosscache
-*.sln.docstates
-
-# IDEs and editors
+# Tooling / IDEs
 .vs/
 .vscode/
 .idea/
@@ -15,7 +14,6 @@
 *.user
 *.userosscache
 *.sln.docstates
-*.suo
 *.clw
 *.ncb
 *.aps
@@ -23,3 +21,22 @@
 *.vsp
 *.vspx
 *.sap
+*.cache
+*.log
+*.tmp
+*.bak
+
+# Server Uploads directory
+LANChatServer/bin/
+LANChatServer/obj/
+LANChatServer/uploads/
+
+# Client Downloaded files
+VLANChatClient/bin/
+VLANChatClient/obj/
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/

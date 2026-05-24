@@ -1,43 +1,17 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using LANChatPro.Models;
-using LANChatPro.Storage;
-using LANChatPro.Utils;
 
 namespace LANChatPro.Services
 {
     public class ChatHistoryService
     {
-        private static readonly string HistoryPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "LANChatPro",
-            "history.json"
-        );
-
         private Dictionary<string, List<ChatMessage>> _history = new();
         private readonly object _lock = new();
 
         public ChatHistoryService()
         {
-            LoadHistory();
-        }
-
-        private void LoadHistory()
-        {
-            lock (_lock)
-            {
-                var loaded = JsonStorage.Load(HistoryPath, JsonContext.Default.DictionaryStringListChatMessage);
-                if (loaded != null)
-                {
-                    _history = loaded;
-                }
-                else
-                {
-                    _history = new Dictionary<string, List<ChatMessage>>();
-                }
-            }
+            // Strictly in-memory, loaded dynamically from Server history sync
         }
 
         public List<ChatMessage> GetGroupHistory()
@@ -65,7 +39,7 @@ namespace LANChatPro.Services
             }
         }
 
-        public void AddGroupMessage(ChatMessage msg)
+        public bool AddGroupMessage(ChatMessage msg)
         {
             lock (_lock)
             {
@@ -75,17 +49,26 @@ namespace LANChatPro.Services
                     _history["group"] = list;
                 }
 
-if (list.Count >= 500)
+                // Check duplicate
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i].Id == msg.Id)
+                    {
+                        return false;
+                    }
+                }
+
+                if (list.Count >= 500)
                 {
                     list.RemoveAt(0);
                 }
 
                 list.Add(msg);
             }
-            SaveHistoryAsync();
+            return true;
         }
 
-        public void AddPrivateMessage(string peerId, ChatMessage msg)
+        public bool AddPrivateMessage(string peerId, ChatMessage msg)
         {
             lock (_lock)
             {
@@ -96,6 +79,15 @@ if (list.Count >= 500)
                     _history[key] = list;
                 }
 
+                // Check duplicate
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i].Id == msg.Id)
+                    {
+                        return false;
+                    }
+                }
+
                 if (list.Count >= 500)
                 {
                     list.RemoveAt(0);
@@ -103,18 +95,7 @@ if (list.Count >= 500)
 
                 list.Add(msg);
             }
-            SaveHistoryAsync();
-        }
-
-        private void SaveHistoryAsync()
-        {
-            Task.Run(() =>
-            {
-                lock (_lock)
-                {
-                    JsonStorage.Save(HistoryPath, _history, JsonContext.Default.DictionaryStringListChatMessage);
-                }
-            });
+            return true;
         }
     }
 }

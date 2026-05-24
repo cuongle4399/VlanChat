@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -88,15 +88,16 @@ rtbChat.DetectUrls = true;
             rtbChat.LinkClicked += RtbChat_LinkClicked;
             rtbChat.MouseMove += RtbChat_MouseMove;
             rtbChat.MouseDown += RtbChat_MouseDown;
-
-_chatService.PeerOnline += ChatService_PeerOnline;
+            _chatService.PeerOnline += ChatService_PeerOnline;
             _chatService.PeerOffline += ChatService_PeerOffline;
             _chatService.PeerUpdated += ChatService_PeerUpdated;
             _chatService.PeerTypingChanged += ChatService_PeerTypingChanged;
             _chatService.GroupMessageReceived += ChatService_GroupMessageReceived;
             _chatService.PrivateMessageReceived += ChatService_PrivateMessageReceived;
+            _chatService.ServerDisconnected += ChatService_ServerDisconnected;
+            _chatService.HistorySynced += ChatService_HistorySynced;
 
-_chatService.FileTransferService.TransferUpdated += Transfer_Updated;
+            _chatService.FileTransferService.TransferUpdated += Transfer_Updated;
             _chatService.FileTransferService.TransferCompleted += Transfer_Completed;
             _chatService.FileTransferService.TransferFailed += Transfer_Failed;
 
@@ -146,18 +147,41 @@ LoadGroupHistory();
             }
         }
 
-        protected override void OnLoad(EventArgs e)
+        protected override async void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-try
+            Enabled = false;
+            UseWaitCursor = true;
+
+            try
             {
-                _chatService.Start();
+                bool connected = await _chatService.StartAsync();
+                if (!connected)
+                {
+                    MessageBox.Show(
+                        $"Không thể thiết lập phiên làm việc với máy chủ LANChatServer tại {_chatService.ConfigManager.Config.ServerIp}:{_chatService.ConfigManager.Config.ServerPort}.",
+                        "Lỗi kết nối",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    BeginInvoke(new Action(Close));
+                    return;
+                }
+
                 UpdateGroupHeaderDetails();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Failed to initialize local network service: {ex.Message}", "Network Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                BeginInvoke(new Action(Close));
+            }
+            finally
+            {
+                UseWaitCursor = false;
+                if (!IsDisposed)
+                {
+                    Enabled = true;
+                }
             }
         }
 
@@ -169,6 +193,8 @@ try
             _chatService.PeerTypingChanged -= ChatService_PeerTypingChanged;
             _chatService.GroupMessageReceived -= ChatService_GroupMessageReceived;
             _chatService.PrivateMessageReceived -= ChatService_PrivateMessageReceived;
+            _chatService.ServerDisconnected -= ChatService_ServerDisconnected;
+            _chatService.HistorySynced -= ChatService_HistorySynced;
 
             _chatService.FileTransferService.TransferUpdated -= Transfer_Updated;
             _chatService.FileTransferService.TransferCompleted -= Transfer_Completed;
@@ -176,6 +202,61 @@ try
 
             _chatService.Stop();
             base.OnFormClosing(e);
+        }
+
+        private void ChatService_HistorySynced()
+        {
+            BeginInvokeIfReady(() =>
+            {
+                if (_activeChatPeerId == null)
+                {
+                    LoadGroupHistory();
+                }
+                else
+                {
+                    LoadPrivateHistory(_activeChatPeerId);
+                }
+            });
+        }
+
+        private void ChatService_ServerDisconnected()
+        {
+            BeginInvokeIfReady(() =>
+            {
+                // 1. Disable toàn bộ giao diện chat
+                DisableAllChatControls();
+
+                // 2. Cập nhật header thông báo
+                lblHeaderDetails.Text = "🔴 Mất kết nối tới máy chủ!";
+
+                // 3. Hỏi user muốn làm gì
+                var result = MessageBox.Show(
+                    "❌ Máy chủ LAN Chat đã ngắt kết nối.\n\n" +
+                    "Bạn có muốn quay về màn hình kết nối để thử lại không?",
+                    "Mất kết nối máy chủ",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning,
+                    MessageBoxDefaultButton.Button1);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Đặt Tag để Program.cs biết cần hiện lại ConnectionCheckForm
+                    this.Tag = "reconnect";
+                    this.Close();
+                }
+                // Nếu No: giữ nguyên form nhưng UI đã bị disable
+            });
+        }
+
+        private void DisableAllChatControls()
+        {
+            txtMessage.Enabled = false;
+            txtMessage.PlaceholderText = "⚠️ Mất kết nối máy chủ...";
+            btnSend.Enabled = false;
+            btnSendFile.Enabled = false;
+            btnEmoji.Enabled = false;
+            lstPeers.Enabled = false;
+            lstChannels.Enabled = false;
         }
 
         private void UpdateUserProfileDisplay()
@@ -337,7 +418,8 @@ private void LoadGroupHistory()
             var messages = _chatService.HistoryService.GetGroupHistory();
             foreach (var msg in messages)
             {
-                if (!string.IsNullOrWhiteSpace(msg.FilePath) && msg.FileSize > 0)
+                bool isFileMsg = msg.FileSize > 0 && !string.IsNullOrEmpty(msg.FileId);
+                if (isFileMsg)
                 {
                     AppendFileMessage(msg, msg.SenderId == _chatService.MyId);
                 }
@@ -516,17 +598,20 @@ using OpenFileDialog ofd = new OpenFileDialog
         {
             try
             {
+                string serverIp = _chatService.ConfigManager.Config.ServerIp;
+                int serverPort = _chatService.ConfigManager.Config.ServerPort;
+
                 await _chatService.FileTransferService.StartSendSessionAsync(
                     filePath,
                     "group",
                     "Nhóm chung",
-                    "255.255.255.255",
-                    async (transferId, dynamicPort) =>
+                    serverIp,
+                    serverPort,
+                    async (transferId) =>
                     {
-                        return await _chatService.SendGroupFileRequestAsync(filePath, dynamicPort, transferId);
+                        return await _chatService.SendGroupFileRequestAsync(filePath, transferId);
                     });
 
-                AppendChatMessage("Hệ thống", $"Đang chuẩn bị gửi file '{Path.GetFileName(filePath)}' lên phòng chat nhóm...", DateTime.Now.ToString("HH:mm:ss"), false);
                 LoadGroupHistory();
             }
             catch (Exception ex)
@@ -554,17 +639,20 @@ using OpenFileDialog ofd = new OpenFileDialog
             string filePath = ofd.FileName;
             try
             {
+                string serverIp = _chatService.ConfigManager.Config.ServerIp;
+                int serverPort = _chatService.ConfigManager.Config.ServerPort;
+
                 await _chatService.FileTransferService.StartSendSessionAsync(
                     filePath,
                     currentPeer.Id,
                     currentPeer.Username,
-                    currentPeer.IpAddress,
-                    async (transferId, dynamicPort) =>
+                    serverIp,
+                    serverPort,
+                    async (transferId) =>
                     {
-                        return await _chatService.SendFileRequestAsync(currentPeer.Id, filePath, dynamicPort, transferId);
+                        return await _chatService.SendFileRequestAsync(currentPeer.Id, filePath, transferId);
                     });
 
-                AppendChatMessage("Hệ thống", $"Đã gửi yêu cầu truyền file '{Path.GetFileName(filePath)}' tới {currentPeer.Username}.", DateTime.Now.ToString("HH:mm:ss"), false);
                 OpenPrivateChat(currentPeer.Id);
             }
             catch (Exception ex)
@@ -699,7 +787,8 @@ foreach (var item in lstPeers.Items)
             var messages = _chatService.HistoryService.GetPrivateHistory(peerId);
             foreach (var msg in messages)
             {
-                if (!string.IsNullOrWhiteSpace(msg.FilePath) && msg.FileSize > 0)
+                bool isFileMsg = msg.FileSize > 0 && !string.IsNullOrEmpty(msg.FileId);
+                if (isFileMsg)
                 {
                     AppendFileMessage(msg, msg.SenderId == _chatService.MyId);
                 }
@@ -719,7 +808,7 @@ foreach (var item in lstPeers.Items)
             }
         }
 
-private void AppendFileMessage(ChatMessage msg, bool isMe)
+        private void AppendFileMessage(ChatMessage msg, bool isMe)
         {
             if (rtbChat.IsDisposed)
                 return;
@@ -761,7 +850,17 @@ rtbChat.SelectionStart = rtbChat.TextLength;
             rtbChat.SelectionFont = new Font(rtbChat.Font, FontStyle.Regular);
             rtbChat.AppendText($" ({Helpers.FormatFileSize(msg.FileSize)})  —  ");
 
-if (_chatService.FileTransferService.Transfers.TryGetValue(msg.Id, out var transfer))
+            FileTransferInfo? transfer = null;
+            if (_chatService.FileTransferService.Transfers.TryGetValue(msg.Id, out var t1))
+            {
+                transfer = t1;
+            }
+            else if (!string.IsNullOrEmpty(msg.FileId) && _chatService.FileTransferService.Transfers.TryGetValue(msg.FileId, out var t2))
+            {
+                transfer = t2;
+            }
+
+            if (transfer != null)
             {
                 if (transfer.Status == FileTransferStatus.Pending)
                 {
@@ -825,17 +924,22 @@ if (_chatService.FileTransferService.Transfers.TryGetValue(msg.Id, out var trans
             }
             else
             {
+                bool downloaded = !string.IsNullOrWhiteSpace(msg.FilePath) && File.Exists(msg.FilePath);
                 int linkStart = rtbChat.TextLength;
-                string linkText = File.Exists(msg.FilePath) ? "Mở thư mục" : "Tải xuống";
+                string linkText = downloaded ? "📂 Mở" : "⬇️ Tải xuống";
                 rtbChat.SelectionStart = linkStart;
-                rtbChat.SelectionColor = Color.FromArgb(88, 166, 255);
+                rtbChat.SelectionColor = downloaded
+                    ? Color.FromArgb(46, 204, 113)
+                    : Color.FromArgb(88, 166, 255);
                 rtbChat.SelectionFont = new Font(rtbChat.Font, FontStyle.Bold | FontStyle.Underline);
                 rtbChat.AppendText(linkText);
+
+                string linkKey = !string.IsNullOrEmpty(msg.FileId) ? msg.FileId : msg.Id;
                 _fileLinks.Add(new FileLinkRange
                 {
                     Start = linkStart,
                     Length = linkText.Length,
-                    FileId = msg.Id
+                    FileId = linkKey
                 });
             }
         }
@@ -906,23 +1010,27 @@ if (_chatService.FileTransferService.Transfers.TryGetValue(msg.Id, out var trans
 
             if (isMe)
             {
+                // Sender: open original file location
                 OpenDownloadedFileOrFolder(msg.FilePath);
             }
             else
             {
-                if (File.Exists(msg.FilePath))
+                if (!string.IsNullOrWhiteSpace(msg.FilePath) && File.Exists(msg.FilePath))
                 {
+                    // Already downloaded — open folder
                     OpenDownloadedFileOrFolder(msg.FilePath);
                 }
                 else
                 {
-                    if (_chatService.TryGetPendingFileDownload(fileId, out var pendingFile) && pendingFile != null)
+                    // Use FileId (consistent key with PendingFileDownloads)
+                    string pendingKey = !string.IsNullOrEmpty(msg.FileId) ? msg.FileId : fileId;
+                    if (_chatService.TryGetPendingFileDownload(pendingKey, out var pendingFile) && pendingFile != null)
                     {
-                        DownloadPendingFile(fileId);
+                        DownloadPendingFile(pendingKey, pendingFile);
                     }
                     else
                     {
-                        MessageBox.Show("File không tồn tại hoặc đã bị xóa.", "Mở file", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("File không tồn tại hoặc đã bị xóa khỏi máy chủ.", "Mở file", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
             }
@@ -934,64 +1042,88 @@ if (_chatService.FileTransferService.Transfers.TryGetValue(msg.Id, out var trans
             {
                 if (File.Exists(filePath))
                 {
-                    string argument = $"/select,\"{filePath}\"";
-                    System.Diagnostics.Process.Start("explorer.exe", argument);
+                    // Open file directly with default application
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = filePath,
+                        UseShellExecute = true
+                    });
                 }
                 else
                 {
-                    string? directory = Path.GetDirectoryName(filePath);
-                    if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
-                    {
-                        System.Diagnostics.Process.Start("explorer.exe", $"\"{directory}\"");
-                    }
-                    else
-                    {
-                        MessageBox.Show("Thư mục chứa file không tồn tại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
+                    MessageBox.Show("File không tồn tại trên đĩa củng.", "Mở file", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Không thể mở file/thư mục: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Không thể mở file: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void DownloadPendingFile(string fileId)
+        private void DownloadPendingFile(string fileId, PendingFileDownload pendingFile)
         {
-            if (!_chatService.TryGetPendingFileDownload(fileId, out var pendingFile) || pendingFile == null)
+            // Resolve save path automatically — no dialog needed
+            string targetFolder = _chatService.ConfigManager.Config.DownloadFolder;
+            if (string.IsNullOrWhiteSpace(targetFolder) || !Directory.Exists(targetFolder))
+                targetFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+
+            if (!Directory.Exists(targetFolder))
+                Directory.CreateDirectory(targetFolder);
+
+            // Deduplicate filename if already exists
+            string savePath = Path.Combine(targetFolder, pendingFile.FileName);
+            if (File.Exists(savePath))
             {
-                MessageBox.Show("File này không còn khả dụng để tải. Người gửi có thể đã đóng ứng dụng hoặc phiên gửi đã hết hạn.", "Tải file", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
+                string nameNoExt = Path.GetFileNameWithoutExtension(pendingFile.FileName);
+                string ext = Path.GetExtension(pendingFile.FileName);
+                int c = 1;
+                do { savePath = Path.Combine(targetFolder, $"{nameNoExt} ({c++}){ext}"); }
+                while (File.Exists(savePath));
             }
 
-            using SaveFileDialog sfd = new SaveFileDialog
-            {
-                FileName = pendingFile.FileName,
-                InitialDirectory = _chatService.ConfigManager.Config.DownloadFolder,
-                Title = "Lưu file nhận được"
-            };
+            string serverIp = _chatService.ConfigManager.Config.ServerIp;
+            int serverPort = _chatService.ConfigManager.Config.ServerPort;
 
-            if (sfd.ShowDialog() != DialogResult.OK)
-                return;
+            // Remove from pending so button can't be double-clicked
+            _chatService.PendingFileDownloads.TryRemove(fileId, out _);
 
-            if (_chatService.StartPendingFileDownload(fileId, sfd.FileName))
+            // Update the ChatMessage's FilePath so "📂 Mở" works after download
+            var msgs = _activeChatPeerId == null
+                ? _chatService.HistoryService.GetGroupHistory()
+                : _chatService.HistoryService.GetPrivateHistory(_activeChatPeerId);
+            var msg = msgs?.FirstOrDefault(m => m.FileId == fileId);
+            if (msg != null) msg.FilePath = savePath;
+
+            _ = Task.Run(async () =>
             {
-                AppendChatMessage("System", $"Đang tải file '{pendingFile.FileName}'...", DateTime.Now.ToString("HH:mm:ss"), false);
-            }
-            else
-            {
-                MessageBox.Show("Không thể bắt đầu tải file này.", "Tải file", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+                try
+                {
+                    await _chatService.FileTransferService.StartDownloadSessionAsync(
+                        fileId, savePath, pendingFile.FileName, pendingFile.FileSize, serverIp, serverPort);
+                }
+                catch (Exception ex)
+                {
+                    // Re-add to pending so user can retry
+                    _chatService.PendingFileDownloads.TryAdd(fileId, pendingFile);
+                    if (msg != null) msg.FilePath = string.Empty;
+                    BeginInvokeIfReady(() =>
+                        MessageBox.Show($"Tải file thất bại: {ex.Message}", "Tải file", MessageBoxButtons.OK, MessageBoxIcon.Error));
+                }
+            });
         }
 
-private void Transfer_Updated(FileTransferInfo transfer)
+
+        private void Transfer_Updated(FileTransferInfo transfer)
         {
             if (this.IsDisposed || this.Disposing) return;
-            if (_activeChatPeerId == transfer.PeerId)
+            if (_activeChatPeerId == transfer.PeerId || transfer.PeerId == "server")
             {
                 BeginInvokeIfReady(() =>
                 {
-                    LoadPrivateHistory(_activeChatPeerId);
+                    if (_activeChatPeerId == null)
+                        LoadGroupHistory();
+                    else
+                        LoadPrivateHistory(_activeChatPeerId);
                 });
             }
             else if (_activeChatPeerId == null && transfer.PeerId == "group")
@@ -1006,11 +1138,14 @@ private void Transfer_Updated(FileTransferInfo transfer)
         private void Transfer_Completed(FileTransferInfo transfer)
         {
             if (this.IsDisposed || this.Disposing) return;
-            if (_activeChatPeerId == transfer.PeerId)
+            if (_activeChatPeerId == transfer.PeerId || transfer.PeerId == "server")
             {
                 BeginInvokeIfReady(() =>
                 {
-                    LoadPrivateHistory(_activeChatPeerId);
+                    if (_activeChatPeerId == null)
+                        LoadGroupHistory();
+                    else
+                        LoadPrivateHistory(_activeChatPeerId);
                 });
             }
             else if (_activeChatPeerId == null && transfer.PeerId == "group")
@@ -1025,11 +1160,14 @@ private void Transfer_Updated(FileTransferInfo transfer)
         private void Transfer_Failed(FileTransferInfo transfer, string reason)
         {
             if (this.IsDisposed || this.Disposing) return;
-            if (_activeChatPeerId == transfer.PeerId)
+            if (_activeChatPeerId == transfer.PeerId || transfer.PeerId == "server")
             {
                 BeginInvokeIfReady(() =>
                 {
-                    LoadPrivateHistory(_activeChatPeerId);
+                    if (_activeChatPeerId == null)
+                        LoadGroupHistory();
+                    else
+                        LoadPrivateHistory(_activeChatPeerId);
                 });
             }
             else if (_activeChatPeerId == null && transfer.PeerId == "group")
@@ -1115,7 +1253,8 @@ private void ChatService_PeerOnline(PeerInfo peer)
             {
                 if (_activeChatPeerId == null)
                 {
-                    if (!string.IsNullOrWhiteSpace(msg.FilePath) && msg.FileSize > 0)
+                    bool isFileMsg = msg.FileSize > 0 && !string.IsNullOrEmpty(msg.FileId);
+                    if (isFileMsg)
                     {
                         AppendFileMessage(msg, false);
                     }
@@ -1134,7 +1273,8 @@ private void ChatService_PeerOnline(PeerInfo peer)
                 if (_activeChatPeerId == senderId)
                 {
                     ClearUnreadForPeer(senderId);
-                    if (!string.IsNullOrWhiteSpace(msg.FilePath) && msg.FileSize > 0)
+                    bool isFileMsg = msg.FileSize > 0 && !string.IsNullOrEmpty(msg.FileId);
+                    if (isFileMsg)
                     {
                         AppendFileMessage(msg, false);
                     }
@@ -1220,13 +1360,13 @@ OpenPrivateChat(msg.SenderId);
                         }
                         else
                         {
-                            await _chatService.SendFileRejectAsync(senderIp, msg.SenderPort, msg.FileId);
+                            await _chatService.SendFileRejectAsync(msg.SenderId, msg.FileId);
                         }
                     }
                 }
                 else
                 {
-                    await _chatService.SendFileRejectAsync(senderIp, msg.SenderPort, msg.FileId);
+                    await _chatService.SendFileRejectAsync(msg.SenderId, msg.FileId);
                 }
             });
         }

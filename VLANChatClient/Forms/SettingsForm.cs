@@ -17,11 +17,15 @@ namespace LANChatPro.Forms
             InitializeComponent();
             _chatService = chatService;
 
-txtUsername.Text = Environment.MachineName;
-            txtUsername.ReadOnly = true;
-            txtUsername.Enabled = false;
+            // Load current username from config (editable)
+            txtUsername.Text = _chatService.ConfigManager.Config.Username;
+            txtUsername.ReadOnly = false;
+            txtUsername.Enabled = true;
+            txtUsername.MaxLength = 30;
 
             txtDownloadPath.Text = _chatService.ConfigManager.Config.DownloadFolder;
+            txtServerIp.Text = _chatService.ConfigManager.Config.ServerIp;
+            nudServerPort.Value = Math.Clamp(_chatService.ConfigManager.Config.ServerPort, 1, 65535);
             chkEnableSound.Checked = _chatService.ConfigManager.Config.EnableSound;
             chkStartWithWindows.Checked = _chatService.ConfigManager.Config.StartWithWindows;
             _selectedAvatarIndex = _chatService.ConfigManager.Config.AvatarIndex;
@@ -103,18 +107,32 @@ txtUsername.Text = Environment.MachineName;
             }
         }
 
-        private void btnSave_Click(object sender, EventArgs e)
+        private async void btnSave_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(txtUsername.Text))
+            string username = txtUsername.Text.Trim();
+            if (string.IsNullOrWhiteSpace(username))
             {
-                MessageBox.Show("Username cannot be empty!", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Tên hiển thị không được để trống!", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (username.Length > 30)
+            {
+                MessageBox.Show("Tên hiển thị tối đa 30 ký tự!", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
             string downloadFolder = txtDownloadPath.Text.Trim();
+            string serverIp = txtServerIp.Text.Trim();
             if (string.IsNullOrWhiteSpace(downloadFolder))
             {
                 MessageBox.Show("Downloads folder cannot be empty!", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(serverIp))
+            {
+                MessageBox.Show("Server host cannot be empty. Use the LAN IP of the machine running LANChatServer.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -128,11 +146,68 @@ txtUsername.Text = Environment.MachineName;
                 return;
             }
 
-            _chatService.ConfigManager.Config.Username = txtUsername.Text.Trim();
+            bool networkChanged =
+                !string.Equals(_chatService.ConfigManager.Config.ServerIp, serverIp, StringComparison.OrdinalIgnoreCase) ||
+                _chatService.ConfigManager.Config.ServerPort != (int)nudServerPort.Value;
+
+            btnSave.Enabled = false;
+            UseWaitCursor = true;
+
+            try
+            {
+                if (networkChanged)
+                {
+                    bool serverAvailable = await ChatService.CanConnectToServerAsync(serverIp, (int)nudServerPort.Value);
+                    if (!serverAvailable)
+                    {
+                        MessageBox.Show(
+                            $"Cannot connect to LANChatServer at {serverIp}:{(int)nudServerPort.Value}.{Environment.NewLine}Start the server before using this address.",
+                            "Server unavailable",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+            }
+            finally
+            {
+                UseWaitCursor = false;
+                btnSave.Enabled = true;
+            }
+
+            string oldServerIp = _chatService.ConfigManager.Config.ServerIp;
+            int oldServerPort = _chatService.ConfigManager.Config.ServerPort;
+
+            _chatService.ConfigManager.Config.Username = username;
             _chatService.ConfigManager.Config.DownloadFolder = downloadFolder;
+            _chatService.ConfigManager.Config.ServerIp = serverIp;
+            _chatService.ConfigManager.Config.ServerPort = (int)nudServerPort.Value;
             _chatService.ConfigManager.Config.EnableSound = chkEnableSound.Checked;
             _chatService.ConfigManager.Config.StartWithWindows = chkStartWithWindows.Checked;
             _chatService.ConfigManager.Config.AvatarIndex = _selectedAvatarIndex;
+
+            if (networkChanged)
+            {
+                btnSave.Enabled = false;
+                UseWaitCursor = true;
+                bool restarted = await _chatService.RestartNetworkAsync();
+                UseWaitCursor = false;
+                btnSave.Enabled = true;
+
+                if (!restarted)
+                {
+                    _chatService.ConfigManager.Config.ServerIp = oldServerIp;
+                    _chatService.ConfigManager.Config.ServerPort = oldServerPort;
+                    await _chatService.RestartNetworkAsync();
+
+                    MessageBox.Show(
+                        "Cannot reconnect with the new server settings. The previous server settings were restored.",
+                        "Server reconnect failed",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error);
+                    return;
+                }
+            }
 
             _chatService.ConfigManager.Save();
 
@@ -144,35 +219,6 @@ txtUsername.Text = Environment.MachineName;
         {
             DialogResult = DialogResult.Cancel;
             this.Close();
-        }
-
-        private void btnClearData_Click(object sender, EventArgs e)
-        {
-            var result = MessageBox.Show(
-                "Bạn có chắc chắn muốn xóa toàn bộ dữ liệu ứng dụng (lịch sử chat, hồ sơ, và cài đặt)? Ứng dụng sẽ tự động đóng sau khi xóa.",
-                "Xác nhận xóa dữ liệu",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning
-            );
-
-            if (result == DialogResult.Yes)
-            {
-                try
-                {
-                    _chatService.Stop();
-                    string appDataFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LANChatPro");
-                    if (Directory.Exists(appDataFolder))
-                    {
-                        Directory.Delete(appDataFolder, true);
-                    }
-                    MessageBox.Show("Đã xóa toàn bộ dữ liệu ứng dụng thành công! Vui lòng mở lại ứng dụng.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Environment.Exit(0);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Lỗi khi xóa dữ liệu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
-            }
         }
 
         private int ScaleForDpi(int value)

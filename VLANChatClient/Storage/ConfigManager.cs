@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using Microsoft.Win32;
 
@@ -29,13 +29,30 @@ namespace LANChatPro.Storage
             }
             else
             {
+                bool needsSave = false;
+                if (string.IsNullOrEmpty(config.ClientId))
+                {
+                    config.ClientId = Guid.NewGuid().ToString("N");
+                    needsSave = true;
+                }
+
+                // Use MachineName as default only if username has never been set
+                if (string.IsNullOrWhiteSpace(config.Username))
+                {
+                    config.Username = Environment.MachineName;
+                    needsSave = true;
+                }
 
                 if (string.IsNullOrEmpty(config.DownloadFolder))
                 {
                     config.DownloadFolder = GetDefaultDownloadFolder();
+                    needsSave = true;
                 }
 
-                config.Username = Environment.MachineName;
+                if (needsSave)
+                {
+                    SaveConfig(config);
+                }
             }
             return config;
         }
@@ -55,6 +72,7 @@ namespace LANChatPro.Storage
         {
             return new AppConfig
             {
+                ClientId = Guid.NewGuid().ToString("N"),
                 Username = Environment.MachineName,
                 AvatarIndex = new Random().Next(0, 8),
                 DownloadFolder = GetDefaultDownloadFolder(),
