@@ -1,0 +1,58 @@
+name: Build & Release Native AOT
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Native AOT
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish LANChatServer (Server)
+        run: |
+          dotnet publish LANChatServer\LANChatServer.csproj -c Release -r win-x64 --self-contained
+
+      - name: Publish VLANChatClient (Client)
+        run: |
+          dotnet publish VLANChatClient\LANChatPro.csproj -c Release -r win-x64 --self-contained
+
+      - name: Create Artifacts Directory
+        run: |
+          mkdir build-output
+          copy LANChatServer\bin\Release\net8.0-windows\win-x64\publish\LANChatServer.exe build-output\
+          copy VLANChatClient\bin\Release\net8.0-windows\win-x64\publish\LANChatPro.exe build-output\
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: VlanChat-NativeAOT
+          path: build-output/
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build-output/LANChatServer.exe
+            build-output/LANChatPro.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
